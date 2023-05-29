@@ -1,22 +1,33 @@
 <html>
 <meta charset="utf-8">
-<title>mqtt js client demo</title>
+<title>Traceable Package 認證網頁</title>
 <head>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
 
 <script>
-    const TOPIC = "message";
     var client = false;
-
+    var userName = "";
+    var password = "";
     // 用戶端成功連接 broker 時...
     function onConnect() {
         // 確認連接後，才能訂閱主題
-        console.log("onConnect then subscribe topic");
-        client.subscribe(TOPIC);
+        console.log("連結成功");
+        // 禁止重複連結MQTT Broker
+        document.getElementById("sign_in").disabled = true;
+        // 允許寄送驗證碼
+        document.getElementById("sendVerifyCode").disabled = false;
+        
+        // 訂閱主題
+        // 用來接收是否開鎖
+        client.subscribe("echo");
+        
     }
-
+    // 若用戶端連結失敗
+    function onFailure() {
+        console.log("連結失敗");
+    }
     // 收到訊息時...
     function onMessageArrived(message) {
         console.log("onMessageArrived:"+message.payloadString);
@@ -24,28 +35,36 @@
     }
 
     // 發佈訊息
-    function publish_message() {
-        var input_text = document.getElementById("mqtt_text");
-        var payload = input_text.value;
-        var message = new Paho.MQTT.Message(payload);
-        message.destinationName = TOPIC;
-        console.log(message)
+    function publish_message(topic, message) {
+        var message = new Paho.MQTT.Message(message);
+        message.destinationName = topic;
         client.send(message);
-        input_text.value = '';
     }
     function connectToMQTT() {
         userName = document.getElementById("userName").value;
         password = document.getElementById("password").value;
         var options = {
             onSuccess: onConnect,
+            onFailure: onFailure,
             userName: userName,
             password: password
         };
         client.connect(options);
+        
+    }
+    function sendVerifyCode() {
+        publish_message("sendVericyCode", userName);
+        document.getElementById("verify").disabled = false;
+    }
+    function verify() {
+        var password = document.getElementById("verifyCode").value;
+        publish_message("password", password);
     }
     function init() {
-        document.getElementById("mqtt_pub").addEventListener('click', publish_message);
+        
         document.getElementById("sign_in").addEventListener('click', connectToMQTT);
+        document.getElementById("sendVerifyCode").addEventListener('click', sendVerifyCode);
+        document.getElementById("verify").addEventListener('click', verify);
         // 建立 MQTT 用戶端實體. 你必須正確寫上你設置的埠號.
         // ClientId 可以自行指定，提供 MQTT broker 認證用
         client = new Paho.MQTT.Client("ws://localhost:1884/", "myClientId");
@@ -59,7 +78,7 @@
 </script>
 <body>
 <p>
-    mqtt client test...
+    Traceable Package 認證網頁
 </p>
 
 <div class="container">
@@ -74,10 +93,13 @@
     </div>
 </div>
 
-<input class = "item" type="text" id="mqtt_text" />
-<button class = "item" id="mqtt_pub">Publish</button>
-
-<div id="mqtt_monitor">
+<input  type="text" id="verifyCode" required/>
+<button id="sendVerifyCode" disabled="true">寄送驗證碼</button>
+<button id="verify" disabled="true">驗證</button>
+<div>
+    status:
+    <div id="mqtt_monitor">
+    </div>
 </div>
 
 </body>
