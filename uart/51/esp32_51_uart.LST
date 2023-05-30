@@ -1,0 +1,130 @@
+C51 COMPILER V7.08   ESP32_51_UART                                                         05/16/2023 11:31:09 PAGE 1   
+
+
+C51 COMPILER V7.08, COMPILATION OF MODULE ESP32_51_UART
+OBJECT MODULE PLACED IN esp32_51_uart.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE esp32_51_uart.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1           
+   2          /*-----------------------------------------------
+   3            ¦WºÙ¡G¦ê¤f³q«H
+   4            ¤º®e¡G³s±µ¦n¦ê¤f©ÎªÌusbÂà¦ê¤f¦Ü¹q¸£¡A¤U¸ü¸Óµ{¦¡¡A¥´¶}¹q·½
+   5                  ¥´¶}¦ê¤f°»¿ù¤u¨ã¡A±N¦ê¦C¶Ç¿é³t²v³]¸m¬°9600¡AµL¦P¦ì
+   6                  ´¹®¶11.0592MHz¡Aµo°e©M±µ¦¬¨Ï¥Îªº®æ¦¡¬Û¦P¡A¦p³£¨Ï¥Î
+   7                  ¦r¤¸«¬®æ¦¡¡A«ö­«©w­«±Òµ{¦¡¡A¥i¥H¬Ý¨ì±µ¦¬¨ì UART test¡A§Þ³N½×¾Â¡Gwww.doflye.net ½Ð¦bµo°e°Ï¿é¤J¥ô·N«
+             -H
+   8                          µM«á¦bµo°e°Ïµo°e¥ô·N¸ê°T¡A±µ¦¬°Ïªð¦^¦P¼Ë¸ê°T¡Aªí©ú¦ê¤f¦¬µoµL»~
+   9          ------------------------------------------------*/
+  10          
+  11          #include<reg52.h> //¥]§t¼ÐÀYÀÉ¡A¤@¯ë±¡ªp¤£»Ý­n§ï°Ê¡A¼ÐÀYÀÉ¥]§t¯S®í¥\¯à±H¦s¾¹ªº©w¸q                        
+  12          sbit esp32=P1^0;
+  13          #define MAX 20
+  14          unsigned char buf[MAX];
+  15          unsigned char head=0;
+  16          unsigned char tail=0;
+  17          
+  18          /*------------------------------------------------
+  19                             ¨ç¦¡«Å§i
+  20          ------------------------------------------------*/
+  21          void SendStr(unsigned char *s);
+  22          
+  23          /*------------------------------------------------
+  24                              ¦ê¤fªì©l¤Æ
+  25          ------------------------------------------------*/
+  26          void InitUART  (void)
+  27          {
+  28   1      
+  29   1          SCON  = 0x50;                       // SCON: ¼Ò¦¡ 1, 8-bit UART, ¨Ï¯à±µ¦¬  
+  30   1          TMOD |= 0x20;               // TMOD: timer 1, mode 2, 8-bit ­«¸Ë
+  31   1          TH1   = 0xFD;               // TH1:  ­«¸Ë­È 9600 ¦ê¦C¶Ç¿é³t²v ´¹®¶ 11.0592MHz  
+  32   1          TR1   = 1;                  // TR1:  timer 1 ¥´¶}                         
+  33   1          EA    = 1;                  //¥´¶}Á`¤¤Â_
+  34   1         // ES    = 1;                  //¥´¶}¦ê¤f¤¤Â_
+  35   1      }                            
+  36          /*------------------------------------------------
+  37                              ¥D¨ç¼Æ
+  38          ------------------------------------------------*/
+  39          void main (void)
+  40          {
+  41   1      
+  42   1      unsigned long i;
+  43   1      unsigned char cmd;
+  44   1      InitUART();
+  45   1      
+  46   1      //SendStr("UART test¡A§Þ³N½×¾Â¡Gwww.doflye.net ½Ð¦bµo°e°Ï¿é¤J¥ô·N¸ê°T");
+  47   1      
+  48   1      ES    = 1;                  //¥´¶}¦ê¤f¤¤Â_
+  49   1      while (1)                       
+  50   1          {
+  51   2      
+  52   2                      if (head != tail)
+  53   2                      {
+  54   3                              cmd = buf[tail];
+C51 COMPILER V7.08   ESP32_51_UART                                                         05/16/2023 11:31:09 PAGE 2   
+
+  55   3                              tail++;
+  56   3                              if (tail == MAX)
+  57   3                      tail = 0;
+  58   3                              
+  59   3                              P0 = cmd;
+  60   3                      }
+  61   2      
+  62   2          }
+  63   1      }
+*** WARNING C280 IN LINE 42 OF ESP32_51_UART.C: 'i': unreferenced local variable
+  64          
+  65          /*------------------------------------------------
+  66                              µo°e¤@­Ó¦ì¤¸²Õ
+  67          ------------------------------------------------*/
+  68          void SendByte(unsigned char dat)
+  69          {
+  70   1       SBUF = dat;
+  71   1       while(!TI);
+  72   1            TI = 0;
+  73   1      }
+  74          /*------------------------------------------------
+  75                              µo°e¤@­Ó¦r¦ê
+  76          ------------------------------------------------*/
+  77          void SendStr(unsigned char *s)
+  78          {
+  79   1       while(*s!='\0')// \0 ªí¥Ü¦r¦êµ²§ô¼Ð»x¡A³q¹LÀË´ú¬O§_¦r¦ê¥½§À
+  80   1        {
+  81   2        SendByte(*s);
+  82   2        s++;
+  83   2        }
+  84   1      }
+  85          /*------------------------------------------------
+  86                               ¦ê¤f¤¤Â_µ{¦¡
+  87          ------------------------------------------------*/
+  88          void UART_SER (void) interrupt 4 //¦ê¦C¤¤Â_ªA°Èµ{¦¡
+  89          {
+  90   1          unsigned char Temp;          //©w¸qÁ{®ÉÅÜ¼Æ 
+  91   1         
+  92   1         if(RI)                        //§PÂ_¬O±µ¦¬¤¤Â_²£¥Í
+  93   1           {
+  94   2                RI=0;                      //¼Ð»x¦ì¤¸²M¹s
+  95   2                Temp=SBUF;                 //Åª¤J½w½Ä°Ïªº­È
+  96   2            SBUF=Temp;                 //§â±µ¦¬¨ìªº­È¦Aµo¦^¹q¸£ºÝ
+  97   2                buf[head] = Temp;
+  98   2                head++;
+  99   2                if (head == MAX) head = 0;                    
+ 100   2               }
+ 101   1      
+ 102   1      } 
+ 103          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    119    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     22       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

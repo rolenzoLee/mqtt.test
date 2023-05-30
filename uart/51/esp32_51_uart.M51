@@ -1,0 +1,174 @@
+BL51 BANKED LINKER/LOCATER V5.03                                                        05/16/2023  11:31:09  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V5.03, INVOKED BY:
+C:\KEIL\C51\BIN\BL51.EXE esp32_51_uart.obj TO esp32_51_uart RAMSIZE (256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  esp32_51_uart.obj (ESP32_51_UART)
+  C:\KEIL\C51\LIB\C51S.LIB (?C_STARTUP)
+  C:\KEIL\C51\LIB\C51S.LIB (?C?CLDPTR)
+  C:\KEIL\C51\LIB\C51S.LIB (?C_INIT)
+
+
+LINK MAP OF MODULE:  esp32_51_uart (ESP32_51_UART)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     0016H     UNIT         ?DT?ESP32_51_UART
+            DATA    001EH     0004H     UNIT         _DATA_GROUP_
+            IDATA   0022H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     0020H     UNIT         ?PR?MAIN?ESP32_51_UART
+            CODE    0023H     0003H     ABSOLUTE     
+            CODE    0026H     008CH     UNIT         ?C_C51STARTUP
+            CODE    00B2H     002EH     UNIT         ?PR?UART_SER?ESP32_51_UART
+            CODE    00E0H     0019H     UNIT         ?C?LIB_CODE
+            CODE    00F9H     0013H     UNIT         ?PR?_SENDSTR?ESP32_51_UART
+            CODE    010CH     000EH     UNIT         ?PR?INITUART?ESP32_51_UART
+            CODE    011AH     0008H     UNIT         ?PR?_SENDBYTE?ESP32_51_UART
+            CODE    0122H     0007H     UNIT         ?C_INITSEG
+
+
+
+OVERLAY MAP OF MODULE:   esp32_51_uart (ESP32_51_UART)
+
+
+SEGMENT                               DATA_GROUP 
+  +--> CALLED SEGMENT               START    LENGTH
+---------------------------------------------------
+?C_C51STARTUP                       -----    -----
+  +--> ?PR?MAIN?ESP32_51_UART
+  +--> ?C_INITSEG
+
+?PR?MAIN?ESP32_51_UART              001EH    0004H
+  +--> ?PR?INITUART?ESP32_51_UART
+
+
+
+SYMBOL TABLE OF MODULE:  esp32_51_uart (ESP32_51_UART)
+
+  VALUE           TYPE          NAME
+BL51 BANKED LINKER/LOCATER V5.03                                                      05/16/2023  11:31:09  PAGE 2
+
+
+  ----------------------------------
+
+  -------         MODULE        ESP32_51_UART
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:0080H         PUBLIC        P0
+  D:0090H         PUBLIC        P1
+  C:011AH         PUBLIC        _SendByte
+  D:00B0H         PUBLIC        P3
+  B:00A8H.7       PUBLIC        EA
+  C:00B2H         PUBLIC        UART_SER
+  D:00A8H         PUBLIC        IE
+  D:0008H         PUBLIC        head
+  B:00A8H.4       PUBLIC        ES
+  D:00B8H         PUBLIC        IP
+  B:0098H.0       PUBLIC        RI
+  B:0098H.1       PUBLIC        TI
+  C:0003H         PUBLIC        main
+  C:00F9H         PUBLIC        _SendStr
+  D:0009H         PUBLIC        tail
+  D:0099H         PUBLIC        SBUF
+  D:0098H         PUBLIC        SCON
+  D:0089H         PUBLIC        TMOD
+  D:0088H         PUBLIC        TCON
+  D:000AH         PUBLIC        buf
+  D:008DH         PUBLIC        TH1
+  C:010CH         PUBLIC        InitUART
+  B:0088H.6       PUBLIC        TR1
+  D:00C8H         PUBLIC        T2CON
+  D:00D0H         PUBLIC        PSW
+  -------         PROC          INITUART
+  C:010CH         LINE#         26
+  C:010CH         LINE#         27
+  C:010CH         LINE#         29
+  C:010FH         LINE#         30
+  C:0112H         LINE#         31
+  C:0115H         LINE#         32
+  C:0117H         LINE#         33
+  C:0119H         LINE#         35
+  -------         ENDPROC       INITUART
+  -------         PROC          MAIN
+  -------         DO            
+  D:001EH         SYMBOL        i
+  D:0007H         SYMBOL        cmd
+  -------         ENDDO         
+  C:0003H         LINE#         39
+  C:0003H         LINE#         40
+  C:0003H         LINE#         44
+  C:0006H         LINE#         48
+  C:0008H         LINE#         49
+  C:0008H         LINE#         50
+  C:0008H         LINE#         52
+  C:000EH         LINE#         53
+  C:000EH         LINE#         54
+  C:0015H         LINE#         55
+  C:0017H         LINE#         56
+  C:001CH         LINE#         57
+  C:001FH         LINE#         59
+BL51 BANKED LINKER/LOCATER V5.03                                                      05/16/2023  11:31:09  PAGE 3
+
+
+  C:0021H         LINE#         60
+  C:0021H         LINE#         62
+  -------         ENDPROC       MAIN
+  -------         PROC          _SENDBYTE
+  D:0007H         SYMBOL        dat
+  C:011AH         LINE#         68
+  C:011AH         LINE#         69
+  C:011AH         LINE#         70
+  C:011CH         LINE#         71
+  C:011FH         LINE#         72
+  C:0121H         LINE#         73
+  -------         ENDPROC       _SENDBYTE
+  -------         PROC          _SENDSTR
+  D:0001H         SYMBOL        s
+  C:00F9H         LINE#         77
+  C:00F9H         LINE#         78
+  C:00F9H         LINE#         79
+  C:00FFH         LINE#         80
+  C:00FFH         LINE#         81
+  C:0102H         LINE#         82
+  C:0109H         LINE#         83
+  C:010BH         LINE#         84
+  -------         ENDPROC       _SENDSTR
+  -------         PROC          UART_SER
+  -------         DO            
+  D:0007H         SYMBOL        Temp
+  -------         ENDDO         
+  C:00B2H         LINE#         88
+  C:00BDH         LINE#         92
+  C:00C0H         LINE#         93
+  C:00C0H         LINE#         94
+  C:00C2H         LINE#         95
+  C:00C4H         LINE#         96
+  C:00C6H         LINE#         97
+  C:00CDH         LINE#         98
+  C:00CFH         LINE#         99
+  C:00D7H         LINE#         100
+  C:00D7H         LINE#         102
+  -------         ENDPROC       UART_SER
+  -------         ENDMOD        ESP32_51_UART
+
+  -------         MODULE        ?C?CLDPTR
+  C:00E0H         PUBLIC        ?C?CLDPTR
+  -------         ENDMOD        ?C?CLDPTR
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_SENDSTR?ESP32_51_UART
+
+Program Size: data=35.0 xdata=0 code=297
+LINK/LOCATE RUN COMPLETE.  1 WARNING(S),  0 ERROR(S)

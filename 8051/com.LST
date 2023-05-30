@@ -1,0 +1,345 @@
+C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 1   
+
+
+C51 COMPILER V7.08, COMPILATION OF MODULE COM
+OBJECT MODULE PLACED IN com.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE com.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          /*-----------------------------------------------
+   2            名稱：IIC協議 EEPROM24c02 存數讀取數據
+   3            內容：此程式用於檢測EEPROM性能，測試方法如下：寫入24c02一個資料，然後在記憶體中改變這些資料，
+   4                  掉電後主記憶體將失去這些資訊，然後從24c02中調入這些資料。看是否與寫入的相同。這裡用8個LED演示
+   5                          函數是採用軟體延時的方法產生SCL脈衝,固對高晶振頻率要作 一定的修改....(本例是1us機器
+   6                          週期,即晶振頻率要小於12MHZ)
+   7          ------------------------------------------------*/  
+   8            
+   9                        
+  10          #include <reg52.h>          //標頭檔的包含
+  11          #include <intrins.h>
+  12          
+  13          #define  _Nop()  _nop_()        //定義空指令
+  14          
+  15          // 常,變數定義區
+  16          unsigned char code dofly_DuanMa[]={0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f, // 0 = 00111111
+  17                                                           0x77,0x7c,0x39,0x5e,0x79,0x71, 0x5c, 0x38, 0x40};// 顯示段碼值0~F // o =0101
+             -1100 // L = 00111000 // - = 01000000
+  18          unsigned char code dofly_WeiMa[]={0xfe,0xfd,0xfb,0xf7,0xef,0xdf,0xbf,0x7f};//分別對應相應的數碼管點亮,即位
+             -碼
+  19          unsigned char TempData[10]; //存儲顯示值的全域變數
+  20          #define DataPort P0 //定義資料埠 程式中遇到DataPort 則用P0 替換
+  21          #define KeyPort  P1
+  22          sbit LATCH1=P2^2;//定義鎖存使能埠 段鎖存
+  23          sbit LATCH2=P2^3;//                 位鎖存                                             
+  24          sbit SDA=P2^1;            //類比I2C資料傳送位元
+  25          sbit SCL=P2^0;            //類比I2C時鐘控制位元
+  26          #define MAX 20
+  27          unsigned char buf[MAX];
+  28          unsigned char head=0;
+  29          unsigned char tail=0;
+  30                                    
+  31          bit ack;                      //應答標誌位元
+  32             
+  33          
+  34          void DelayUs2x(unsigned char t);//函式宣告 
+  35          void DelayMs(unsigned char t);
+  36          void Display(unsigned char FirstBit,unsigned char Num);//數碼管顯示函數
+  37          unsigned char KeyScan(void);//鍵盤掃描
+  38          unsigned char KeyPro(void);
+  39          void Init_Timer0(void);//計時器初始化
+  40          /*------------------------------------------------
+  41           顯示函數，用於動態掃描數碼管
+  42           輸入參數 FirstBit 表示需要顯示的第一位，如賦值2表示從第三個數碼管開始顯示
+  43           如輸入0表示從第一個顯示。
+  44           Num表示需要顯示的位元數，如需要顯示99兩位元數值則該值輸入2
+  45          ------------------------------------------------*/
+  46          void Display(unsigned char FirstBit,unsigned char Num)
+  47          {
+  48   1        static unsigned char i=0;
+  49   1                
+  50   1      
+  51   1        DataPort=0;   //清空資料，防止有交替重影
+  52   1        LATCH1=1;     //段鎖存
+  53   1        LATCH1=0;
+C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 2   
+
+  54   1      
+  55   1        DataPort=dofly_WeiMa[i+FirstBit]; //取位碼 
+  56   1        LATCH2=1;     //位鎖存
+  57   1        LATCH2=0;
+  58   1      
+  59   1        DataPort=TempData[i]; //取顯示資料，段碼
+  60   1        LATCH1=1;     //段鎖存
+  61   1        LATCH1=0;
+  62   1          
+  63   1        i++;
+  64   1        if(i==Num) i=0;
+  65   1      }
+  66          /*------------------------------------------------
+  67                              計時器初始化副程式
+  68          ------------------------------------------------*/
+  69          void Init_Timer0(void)
+  70          {
+  71   1        TMOD |= 0x01;   //使用模式1，16位元計時器，使用"|"符號可以在使用多個計時器時不受影響               
+  72   1        //TH0=0x00;         //給定初值
+  73   1        //TL0=0x00;
+  74   1        EA=1;            //總中斷打開
+  75   1        ET0=1;           //計時器中斷打開
+  76   1        TR0=1;           //計時器開關打開
+  77   1      }
+  78          /*------------------------------------------------
+  79                           計時器中斷副程式
+  80          ------------------------------------------------*/
+  81          void Timer0_isr(void) interrupt 1 
+  82          {
+  83   1        TH0=(65536-2000)/256;           //重新賦值 2ms
+  84   1        TL0=(65536-2000)%256;
+  85   1      
+  86   1        Display(0,8);       // 調用數碼管掃描
+  87   1      
+  88   1      }
+  89          
+  90          /*------------------------------------------------
+  91                  按鍵掃描函數，返回掃描鍵值
+  92          ------------------------------------------------*/
+  93          unsigned char KeyScan(void)  //鍵盤掃描函數，使用行列逐級掃描法
+  94          {
+  95   1        unsigned char Val;
+  96   1        KeyPort=0xf0;//高四位置高，低四位拉低
+  97   1        if(KeyPort!=0xf0) {//表示有按鍵按下
+  98   2          DelayMs(10);  //去抖
+  99   2          if(KeyPort!=0xf0) {           //表示有按鍵按下
+ 100   3            KeyPort=0xfe; //11111110檢測第一行
+ 101   3            if(KeyPort!=0xfe) {
+ 102   4              Val=KeyPort&0xf0;
+ 103   4              Val+=0x0e;
+ 104   4              while(KeyPort!=0xfe);
+ 105   4              DelayMs(10); //去抖
+ 106   4              while(KeyPort!=0xfe);
+ 107   4              return Val;
+ 108   4            }
+ 109   3            KeyPort=0xfd; //檢測第二行
+ 110   3            if(KeyPort!=0xfd) {
+ 111   4              Val=KeyPort&0xf0;
+ 112   4              Val+=0x0d;
+ 113   4              while(KeyPort!=0xfd);
+ 114   4              DelayMs(10); //去抖
+ 115   4              while(KeyPort!=0xfd);
+C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 3   
+
+ 116   4              return Val;
+ 117   4            }
+ 118   3            KeyPort=0xfb; //檢測第三行
+ 119   3            if(KeyPort!=0xfb) {
+ 120   4              Val=KeyPort&0xf0;
+ 121   4              Val+=0x0b;
+ 122   4              while(KeyPort!=0xfb);
+ 123   4              DelayMs(10); //去抖
+ 124   4              while(KeyPort!=0xfb);
+ 125   4              return Val;
+ 126   4            }
+ 127   3            KeyPort=0xf7; //檢測第四行
+ 128   3            if(KeyPort!=0xf7){
+ 129   4              Val=KeyPort&0xf0;
+ 130   4              Val+=0x07;
+ 131   4              while(KeyPort!=0xf7);
+ 132   4              DelayMs(10); //去抖
+ 133   4              while(KeyPort!=0xf7);
+ 134   4              return Val;
+ 135   4            }
+ 136   3          }
+ 137   2        }
+ 138   1        return 0xff;
+ 139   1      }
+ 140          /*------------------------------------------------
+ 141                   按鍵值處理函數，返回掃鍵值
+ 142          ------------------------------------------------*/
+ 143          unsigned char KeyPro(void)
+ 144          {
+ 145   1        switch(KeyScan()) {                                              //                        前4bit: 第幾行被按下 0111表示第一行被按下
+ 146   2                                         //                        後4bit: 第幾列被按下
+ 147   2        case 0x7e:return 1;break;//0 按下相應的鍵顯示相對應的碼值 01111110
+ 148   2        case 0xbe:return 2;break;//1 10111110
+ 149   2        case 0xde:return 3;break;//2 11011110
+ 150   2        case 0xee:return 'c';break;//3
+ 151   2        case 0x7d:return 4;break;//4
+ 152   2        case 0xbd:return 5;break;//5
+ 153   2        case 0xdd:return 6;break;//6
+ 154   2        case 0xed:return 'e';break;//7
+ 155   2        case 0x7b:return 7;break;//8
+ 156   2        case 0xbb:return 8;break;//9
+ 157   2        case 0xdb:return 9;break;//a
+ 158   2        case 0xeb:return 0xff;break;//b
+ 159   2        case 0x77:return 0xff;break;//c
+ 160   2        case 0xb7:return 0;break;//d
+ 161   2        case 0xd7:return 0xff;break;//e
+ 162   2        case 0xe7:return 0xff;break;//f
+ 163   2        default:return 0xff;break;
+ 164   2        }
+ 165   1      }
+ 166          /*------------------------------------------------
+ 167           uS延時函數，含有輸入參數 unsigned char t，無返回值
+ 168           unsigned char 是定義無符號字元變數，其值的範圍是
+ 169           0~255 這裡使用晶振12M，精確延時請使用彙編,大致延時
+ 170           長度如下 T=tx2+5 uS 
+ 171          ------------------------------------------------*/
+ 172          void DelayUs2x(unsigned char t)
+ 173          {   
+ 174   1        while(--t);
+ 175   1      }
+ 176          /*------------------------------------------------
+ 177           mS延時函數，含有輸入參數 unsigned char t，無返回值
+C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 4   
+
+ 178           unsigned char 是定義無符號字元變數，其值的範圍是
+ 179           0~255 這裡使用晶振12M，精確延時請使用彙編
+ 180          ------------------------------------------------*/
+ 181          void DelayMs(unsigned char t)
+ 182          {
+ 183   1           
+ 184   1        while(t--) {
+ 185   2            //大致延時1mS
+ 186   2          DelayUs2x(245);
+ 187   2          DelayUs2x(245);
+ 188   2        }
+ 189   1      }
+ 190          
+ 191          // 比對密碼
+ 192          bit checkPassword(unsigned char *password, unsigned char *key){
+ 193   1              unsigned char i;
+ 194   1              for(i = 0; i < 4; ++i){
+ 195   2                      if(password[i] != key[i]) return 0;
+ 196   2              }
+ 197   1              return 1;
+ 198   1      }
+ 199          /*------------------------------------------------
+ 200                              發送一個位元組
+ 201          ------------------------------------------------*/
+ 202          void SendByte(unsigned char dat)
+ 203          {
+ 204   1       SBUF = dat;
+ 205   1       while(!TI);
+ 206   1            TI = 0;
+ 207   1      }
+ 208          /*------------------------------------------------
+ 209                              發送一個字串
+ 210          ------------------------------------------------*/
+ 211          void SendStr(unsigned char *s)
+ 212          {
+ 213   1       while(*s!='\0')// \0 表示字串結束標誌，通過檢測是否字串末尾
+ 214   1        {
+ 215   2        SendByte(*s);
+ 216   2        s++;
+ 217   2        }
+ 218   1      }
+ 219          /*------------------------------------------------
+ 220                               串口中斷程式
+ 221          ------------------------------------------------*/
+ 222          void UART_SER (void) interrupt 4 //串列中斷服務程式
+ 223          {
+ 224   1          unsigned char Temp;          //定義臨時變數 
+ 225   1         
+ 226   1         if(RI)                        //判斷是接收中斷產生
+ 227   1           {
+ 228   2                RI=0;                      //標誌位元清零
+ 229   2                Temp=SBUF;                 //讀入緩衝區的值
+ 230   2            SBUF=Temp;                 //把接收到的值再發回電腦端
+ 231   2                buf[head] = Temp;
+ 232   2                head++;
+ 233   2                if (head == MAX) head = 0;                    
+ 234   2               }
+ 235   1      
+ 236   1      }
+ 237          
+ 238          /*------------------------------------------------
+ 239                              串口初始化
+C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 5   
+
+ 240          ------------------------------------------------*/
+ 241          void InitUART  (void)
+ 242          {
+ 243   1      
+ 244   1          SCON  = 0x50;                       // SCON: 模式 1, 8-bit UART, 使能接收  
+ 245   1          TMOD |= 0x20;               // TMOD: timer 1, mode 2, 8-bit 重裝
+ 246   1          TH1   = 0xFD;               // TH1:  重裝值 9600 串列傳輸速率 晶振 11.0592MHz  
+ 247   1          TR1   = 1;                  // TR1:  timer 1 打開                         
+ 248   1          EA    = 1;                  //打開總中斷
+ 249   1         // ES    = 1;                  //打開串口中斷
+ 250   1      }         
+ 251          /*------------------------------------------------
+ 252                              主函數
+ 253          ------------------------------------------------*/
+ 254          void main() {
+ 255   1        unsigned char password[6];       // 定義臨時變數
+ 256   1        unsigned char key[6];
+ 257   1        unsigned char i, j, num;
+ 258   1        unsigned char temp[8];
+ 259   1        bit isLock = 1;
+ 260   1        Init_Timer0();
+ 261   1       //InitUART();
+ 262   1          //for(i = 0; i < 4; ++i) temp[i]=dofly_DuanMa[key[i]]; // 顯示出密碼
+ 263   1      
+ 264   1        for(j=0;j<6;j++) TempData[j]=temp[j]; 
+ 265   1        i = 0;
+ 266   1        while(1) {
+ 267   2      SendStr("1");  
+ 268   2          num = keyPro();
+*** WARNING C206 IN LINE 268 OF COM.C: 'keyPro': missing function-prototype
+ 269   2          if(num!=0xff){
+ 270   3            if(i<6) {
+ 271   4                password[i] = num;
+ 272   4                temp[i]=dofly_DuanMa[num];
+ 273   4                for(j=0;j<=i;j++) TempData[7-i+j]=temp[j];
+ 274   4            }
+ 275   3            i++;
+ 276   3          }
+ 277   2          if(num == 'c'){
+ 278   3            i = 0;
+ 279   3            for(j=0;j<8;j++)//清屏
+ 280   3              TempData[j]=0;
+ 281   3          }
+ 282   2          if(num == 'e'){
+ 283   3            i = 0;
+ 284   3            for(j=0;j<8;j++) {//清屏
+ 285   4              TempData[j]=0;
+ 286   4                }
+ 287   3                SendStr(password);
+ 288   3            if(isLock == 0) {
+ 289   4              
+ 290   4              DelayMs(20);
+ 291   4              
+ 292   4              TempData[7] = dofly_DuanMa[17]; //顯示上鎖
+ 293   4              isLock = 1;
+ 294   4            }
+ 295   3            else if (checkPassword(&password, &key) == 1){
+ 296   4              TempData[7]=dofly_DuanMa[16]; //顯示開鎖
+ 297   4              isLock = 0;
+ 298   4            }else{
+ 299   4              TempData[7]=dofly_DuanMa[18]; //顯示密碼錯誤
+ 300   4            }
+C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 6   
+
+ 301   3          }
+ 302   2      
+ 303   2        }
+ 304   1      }
+ 305          
+ 306          
+ 307          
+ 308          
+ 309          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    758    ----
+   CONSTANT SIZE    =     29    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     33      29
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)
