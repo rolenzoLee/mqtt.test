@@ -3,9 +3,10 @@ from umqtt.simple import MQTTClient
 xtools.connect_wifi_led()
 packageIsDelivered = False
 packgePassword = ""
+global mqClient
 mqClient = MQTTClient (
         client_id = xtools.get_id(),
-        server = "192.168.0.101",
+        server = "192.168.3.189",
         keepalive = 1000, # 保持連線 加上後就成功了
         user = 'rolenzo',
         password = 'rolenzo'
@@ -43,6 +44,5 @@ def init():
     xtools.ledR();
 init()
 while True:
-    
     mqClient.check_msg()
     utime.sleep(3)
