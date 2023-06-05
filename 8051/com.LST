@@ -1,4 +1,4 @@
-C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 1   
+C51 COMPILER V7.08   COM                                                                   06/06/2023 03:35:00 PAGE 1   
 
 
 C51 COMPILER V7.08, COMPILATION OF MODULE COM
@@ -62,7 +62,7 @@ line level    source
   51   1        DataPort=0;   //清空資料，防止有交替重影
   52   1        LATCH1=1;     //段鎖存
   53   1        LATCH1=0;
-C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 2   
+C51 COMPILER V7.08   COM                                                                   06/06/2023 03:35:00 PAGE 2   
 
   54   1      
   55   1        DataPort=dofly_WeiMa[i+FirstBit]; //取位碼 
@@ -126,7 +126,7 @@ line level    source
  113   4              while(KeyPort!=0xfd);
  114   4              DelayMs(10); //去抖
  115   4              while(KeyPort!=0xfd);
-C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 3   
+C51 COMPILER V7.08   COM                                                                   06/06/2023 03:35:00 PAGE 3   
 
  116   4              return Val;
  117   4            }
@@ -190,7 +190,7 @@ line level    source
  175   1      }
  176          /*------------------------------------------------
  177           mS延時函數，含有輸入參數 unsigned char t，無返回值
-C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 4   
+C51 COMPILER V7.08   COM                                                                   06/06/2023 03:35:00 PAGE 4   
 
  178           unsigned char 是定義無符號字元變數，其值的範圍是
  179           0~255 這裡使用晶振12M，精確延時請使用彙編
@@ -254,7 +254,7 @@ line level    source
  237          
  238          /*------------------------------------------------
  239                              串口初始化
-C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 5   
+C51 COMPILER V7.08   COM                                                                   06/06/2023 03:35:00 PAGE 5   
 
  240          ------------------------------------------------*/
  241          void InitUART  (void)
@@ -277,18 +277,18 @@ line level    source
  258   1        unsigned char temp[8];
  259   1        bit isLock = 1;
  260   1        Init_Timer0();
- 261   1       //InitUART();
+ 261   1        InitUART();
  262   1          //for(i = 0; i < 4; ++i) temp[i]=dofly_DuanMa[key[i]]; // 顯示出密碼
  263   1      
  264   1        for(j=0;j<6;j++) TempData[j]=temp[j]; 
  265   1        i = 0;
  266   1        while(1) {
- 267   2      SendStr("1");  
+ 267   2              
  268   2          num = keyPro();
 *** WARNING C206 IN LINE 268 OF COM.C: 'keyPro': missing function-prototype
  269   2          if(num!=0xff){
  270   3            if(i<6) {
- 271   4                password[i] = num;
+ 271   4                password[i] = num + '0';
  272   4                temp[i]=dofly_DuanMa[num];
  273   4                for(j=0;j<=i;j++) TempData[7-i+j]=temp[j];
  274   4            }
@@ -318,7 +318,7 @@ line level    source
  298   4            }else{
  299   4              TempData[7]=dofly_DuanMa[18]; //顯示密碼錯誤
  300   4            }
-C51 COMPILER V7.08   COM                                                                   05/31/2023 01:47:54 PAGE 6   
+C51 COMPILER V7.08   COM                                                                   06/06/2023 03:35:00 PAGE 6   
 
  301   3          }
  302   2      
@@ -332,8 +332,8 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    758    ----
-   CONSTANT SIZE    =     29    ----
+   CODE SIZE        =    756    ----
+   CONSTANT SIZE    =     27    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =     33      29

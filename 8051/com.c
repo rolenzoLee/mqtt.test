@@ -258,17 +258,17 @@ void main() {
   unsigned char temp[8];
   bit isLock = 1;
   Init_Timer0();
- //InitUART();
+  InitUART();
     //for(i = 0; i < 4; ++i) temp[i]=dofly_DuanMa[key[i]]; // Åã¥Ü¥X±K½X
 
   for(j=0;j<6;j++) TempData[j]=temp[j]; 
   i = 0;
   while(1) {
-SendStr("1");  
+	
     num = keyPro();
     if(num!=0xff){
       if(i<6) {
-          password[i] = num;
+          password[i] = num + '0';
           temp[i]=dofly_DuanMa[num];
           for(j=0;j<=i;j++) TempData[7-i+j]=temp[j];
       }

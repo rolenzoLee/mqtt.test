@@ -1,5 +1,6 @@
 import xtools, os, utime, urandom, umail, sender
 from umqtt.simple import MQTTClient
+from machine import UART
 xtools.connect_wifi_led()
 packageIsDelivered = False
 packgePassword = ""
@@ -50,6 +51,10 @@ def sub_cb(topic, msg):
     
 def init():
     xtools.ledOff()
+    #串口通訊
+    com = UART(1, 9600, tx=17, rx=16)
+    com.init(9600)
+    #end 串口
     mqClient.set_callback(sub_cb)
     mqClient.connect()
     mqClient.subscribe(b'password')
@@ -58,6 +63,25 @@ def init():
     mqClient.subscribe(b'control')
     xtools.ledR();
 init()
+def decode8051() :
+    msg = com.readline()
+    packgePassword = msg.decode()
+    print(packgePassword)
+    if (verifyCode == packgePassword):
+        print("unlock")
+        #mqClient.publish(b'echo', "unlock");
+        xtools.ledG()
+    else:
+        #mqClient.publish(b'echo', "incorrect");
+        print("incorrect")
+        xtools.ledOff()
+        utime.sleep(0.3)
+        xtools.ledR()
+        utime.sleep(0.3)
+        xtools.ledOff()
+        utime.sleep(0.3)
+        xtools.ledR()
 while True:
-    mqClient.check_msg()
+    #mqClient.check_msg()
+    decode8051()
     utime.sleep(3)
