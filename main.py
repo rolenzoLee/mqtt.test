@@ -1,4 +1,5 @@
 import xtools, os, utime, urandom, umail, sender
+import ubinascii
 from umqtt.simple import MQTTClient
 from machine import UART
 xtools.connect_wifi_led()
@@ -48,10 +49,12 @@ def sub_cb(topic, msg):
         utime.sleep(1)
         xtools.ledOff()
         xtools.ledR()
-    
+
+
 def init():
     xtools.ledOff()
     #串口通訊
+    global com
     com = UART(1, 9600, tx=17, rx=16)
     com.init(9600)
     #end 串口
@@ -63,16 +66,14 @@ def init():
     mqClient.subscribe(b'control')
     xtools.ledR();
 init()
-def decode8051() :
-    msg = com.readline()
-    packgePassword = msg.decode()
-    print(packgePassword)
-    if (verifyCode == packgePassword):
+def decode8051(msg) :
+    print(verifyCode)
+    if (bytes(verifyCode, 'utf-8') == msg):
         print("unlock")
-        #mqClient.publish(b'echo', "unlock");
+        mqClient.publish(b'echo', "unlock");
         xtools.ledG()
     else:
-        #mqClient.publish(b'echo', "incorrect");
+        mqClient.publish(b'echo', "incorrect");
         print("incorrect")
         xtools.ledOff()
         utime.sleep(0.3)
@@ -82,6 +83,8 @@ def decode8051() :
         utime.sleep(0.3)
         xtools.ledR()
 while True:
-    #mqClient.check_msg()
-    decode8051()
+    mqClient.check_msg()
+    msg = com.readline()
+    if(msg != None):
+        decode8051(msg)
     utime.sleep(3)
